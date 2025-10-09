@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2196F3">
+    <meta name="description" content="אפליקציית ריצה אישית עם מעקב GPS">
+    
+    <title>RunLite - אפליקציית ריצה</title>
+    
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏃</text></svg>">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    
+    <!-- App CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- מסך בית -->
+    <div id="homeScreen" class="screen active">
+        <div class="container">
+            <header class="app-header">
+                <div class="app-logo">🏃</div>
+                <h1>RunLite</h1>
+                <p class="tagline">ריצה פשוטה, נתונים מדויקים</p>
+            </header>
+
+            <div class="main-actions">
+                <button id="startRunBtn" class="btn btn-primary btn-large">
+                    <span class="btn-icon">▶️</span>
+                    <span>התחל ריצה</span>
+                </button>
+            </div>
+
+            <nav class="nav-links">
+                <button id="viewHistoryBtn" class="nav-link">
+                    <span class="nav-icon">📊</span>
+                    <span>יומן ריצות</span>
+                </button>
+                <button id="viewSettingsBtn" class="nav-link">
+                    <span class="nav-icon">⚙️</span>
+                    <span>הגדרות</span>
+                </button>
+            </nav>
+
+            <div class="last-run-info" id="lastRunInfo" style="display: none;">
+                <p class="info-label">ריצה אחרונה</p>
+                <p class="info-value" id="lastRunText"></p>
+            </div>
+
+            <footer class="privacy-notice">
+                🔒 הכול נשמר מקומית - אתה שולט בנתונים שלך
+            </footer>
+        </div>
+    </div>
+
+    <!-- מסך ריצה פעילה -->
+    <div id="runScreen" class="screen">
+        <div class="container">
+            <div class="status-bar">
+                <div class="recording-indicator">
+                    <span class="pulse-dot"></span>
+                    <span>מקליט</span>
+                </div>
+                <div class="gps-indicator" id="gpsIndicator">
+                    <span>GPS:</span>
+                    <span class="gps-dots">●●●</span>
+                </div>
+            </div>
+
+            <div class="run-timer-container">
+                <div class="timer-icon">⏱️</div>
+                <div class="timer-display" id="runTimer">00:00</div>
+                <div class="timer-label">זמן ריצה</div>
+            </div>
+
+            <div class="run-actions">
+                <button id="stopRunBtn" class="btn btn-danger btn-large">
+                    <span class="btn-icon">■</span>
+                    <span>סיום ריצה</span>
+                </button>
+            </div>
+
+            <div class="run-tips">
+                💡 שמור את המכשיר פתוח להקלטה טובה יותר
+            </div>
+        </div>
+    </div>
+
+    <!-- מסך סיכום ריצה -->
+    <div id="summaryScreen" class="screen">
+        <div class="container">
+            <header class="screen-header">
+                <button id="backFromSummaryBtn" class="btn-back">←</button>
+                <h2>סיכום ריצה</h2>
+            </header>
+
+            <div class="map-container" id="summaryMap"></div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">🏃</div>
+                    <div class="stat-value" id="statDistance">-</div>
+                    <div class="stat-label">מרחק</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏱️</div>
+                    <div class="stat-value" id="statTime">-</div>
+                    <div class="stat-label">זמן</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📈</div>
+                    <div class="stat-value" id="statPace">-</div>
+                    <div class="stat-label">קצב ממוצע</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-value" id="statMaxSpeed">-</div>
+                    <div class="stat-label">מהירות שיא</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⛰️</div>
+                    <div class="stat-value" id="statElevation">-</div>
+                    <div class="stat-label">עלייה / ירידה</div>
+                </div>
+            </div>
+
+            <div class="splits-section">
+                <h3>Splits</h3>
+                <div class="splits-list" id="splitsList"></div>
+            </div>
+
+            <div class="run-details-form">
+                <div class="form-group">
+                    <label for="runName">שם ריצה (אופציונלי)</label>
+                    <input type="text" id="runName" placeholder="למשל: ריצת בוקר">
+                </div>
+                <div class="form-group">
+                    <label for="runNotes">הערות (אופציונלי)</label>
+                    <textarea id="runNotes" rows="3" placeholder="מזג אוויר, תחושה..."></textarea>
+                </div>
+            </div>
+
+            <div class="summary-actions">
+                <button id="saveRunBtn" class="btn btn-primary">
+                    <span class="btn-icon">💾</span>
+                    <span>שמור ריצה</span>
+                </button>
+                <button id="exportGpxBtn" class="btn btn-secondary">
+                    <span class="btn-icon">📤</span>
+                    <span>ייצא GPX</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- מסך יומן ריצות -->
+    <div id="historyScreen" class="screen">
+        <div class="container">
+            <header class="screen-header">
+                <button id="backFromHistoryBtn" class="btn-back">←</button>
+                <h2>יומן ריצות</h2>
+            </header>
+
+            <div class="runs-list" id="runsList">
+                <!-- יוצג דינמית -->
+            </div>
+
+            <div class="empty-state" id="emptyHistory" style="display: none;">
+                <div class="empty-icon">🏃</div>
+                <p>עדיין לא ריצת?</p>
+                <button id="startFirstRunBtn" class="btn btn-primary">התחל עכשיו!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- מסך פרטי ריצה -->
+    <div id="detailScreen" class="screen">
+        <div class="container">
+            <header class="screen-header">
+                <button id="backFromDetailBtn" class="btn-back">←</button>
+                <h2>פרטי ריצה</h2>
+                <button id="deleteRunBtn" class="btn-text-danger">🗑️ מחק</button>
+            </header>
+
+            <div class="map-container" id="detailMap"></div>
+
+            <div class="run-info-header">
+                <h3 id="detailRunName">-</h3>
+                <p class="run-date" id="detailRunDate">-</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">🏃</div>
+                    <div class="stat-value" id="detailDistance">-</div>
+                    <div class="stat-label">מרחק</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏱️</div>
+                    <div class="stat-value" id="detailTime">-</div>
+                    <div class="stat-label">זמן</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📈</div>
+                    <div class="stat-value" id="detailPace">-</div>
+                    <div class="stat-label">קצב ממוצע</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-value" id="detailMaxSpeed">-</div>
+                    <div class="stat-label">מהירות שיא</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⛰️</div>
+                    <div class="stat-value" id="detailElevation">-</div>
+                    <div class="stat-label">עלייה / ירידה</div>
+                </div>
+            </div>
+
+            <div class="splits-section">
+                <h3>Splits</h3>
+                <div class="splits-list" id="detailSplitsList"></div>
+            </div>
+
+            <div class="run-notes" id="detailNotes" style="display: none;">
+                <h4>הערות</h4>
+                <p id="detailNotesText"></p>
+            </div>
+
+            <div class="detail-actions">
+                <button id="exportDetailGpxBtn" class="btn btn-primary">
+                    <span class="btn-icon">📤</span>
+                    <span>ייצא GPX</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- מסך הגדרות -->
+    <div id="settingsScreen" class="screen">
+        <div class="container">
+            <header class="screen-header">
+                <button id="backFromSettingsBtn" class="btn-back">←</button>
+                <h2>הגדרות</h2>
+            </header>
+
+            <div class="settings-list">
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">יחידות מדידה</div>
+                        <div class="setting-description">קילומטרים או מיילים</div>
+                    </div>
+                    <select id="unitsSelect" class="setting-select">
+                        <option value="km">קילומטרים</option>
+                        <option value="mi">מיילים</option>
+                    </select>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">דיוק GPS גבוה</div>
+                        <div class="setting-description">משתמש בסוללה יותר</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="highAccuracyToggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="settings-info">
+                <h3>אודות RunLite</h3>
+                <p>גרסה 1.0</p>
+                <p class="privacy-text">🔒 כל הנתונים שלך נשמרים מקומית על המכשיר. אנחנו לא שולחים מידע לשרתים ולא עוקבים אחריך.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal אישור מחיקה -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <h3>מחיקת ריצה</h3>
+            <p>האם אתה בטוח שברצונך למחוק ריצה זו?</p>
+            <p class="warning-text">פעולה זו לא ניתנת לביטול.</p>
+            <div class="modal-actions">
+                <button id="confirmDeleteBtn" class="btn btn-danger">מחק</button>
+                <button id="cancelDeleteBtn" class="btn btn-secondary">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast הודעות -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="loading-spinner" style="display: none;">
+        <div class="spinner"></div>
+        <p>טוען...</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/compute.js"></script>
+    <script src="js/gps.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/gpx.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
