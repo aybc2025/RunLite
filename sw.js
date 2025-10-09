@@ -8,16 +8,16 @@ const CACHE_NAME = CACHE_VERSION;
 
 // קבצים לקאש (הכל מה שצריך לעבודה אופליין)
 const STATIC_CACHE_URLS = [
-    '/',
-    '/index.html',
-    '/css/styles.css',
-    '/js/app.js',
-    '/js/storage.js',
-    '/js/compute.js',
-    '/js/gps.js',
-    '/js/map.js',
-    '/js/gpx.js',
-    '/manifest.json',
+    './',
+    './index.html',
+    './css/styles.css',
+    './js/app.js',
+    './js/storage.js',
+    './js/compute.js',
+    './js/gps.js',
+    './js/map.js',
+    './js/gpx.js',
+    './manifest.json',
     // Leaflet מ-CDN
     'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css',
     'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js',
@@ -122,7 +122,7 @@ self.addEventListener('fetch', (event) => {
                         
                         // אם זו בקשה לדף HTML, החזר את index.html מהקאש
                         if (request.headers.get('accept').includes('text/html')) {
-                            return caches.match('/index.html');
+                            return caches.match('./index.html');
                         }
                         
                         // אחרת, החזר שגיאה
