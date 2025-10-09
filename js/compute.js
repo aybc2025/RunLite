@@ -112,6 +112,7 @@ const Compute = (function() {
         }
 
         let maxSpeed = 0;
+        const MIN_SPEED = 2; // מהירות מינימלית (2 קמ"ש) - להתעלם מעמידות
 
         for (let i = 1; i < points.length; i++) {
             const prev = points[i - 1];
@@ -133,7 +134,8 @@ const Compute = (function() {
             if (timeDiff > 0) {
                 const speed = (distance / timeDiff) * 3600; // ק"מ/שעה
                 
-                if (speed <= MAX_REASONABLE_SPEED && speed > maxSpeed) {
+                // בדיקה שהמהירות בטווח הגיוני (2-25 קמ"ש)
+                if (speed >= MIN_SPEED && speed <= MAX_REASONABLE_SPEED && speed > maxSpeed) {
                     maxSpeed = speed;
                 }
             }
