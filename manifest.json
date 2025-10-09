@@ -2,14 +2,14 @@
   "name": "RunLite - אפליקציית ריצה",
   "short_name": "RunLite",
   "description": "אפליקציית ריצה אישית עם מעקב GPS, שמירה מקומית, וניתוח ביצועים",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#FAFAFA",
   "theme_color": "#2196F3",
   "dir": "rtl",
   "lang": "he",
-  "scope": "/",
+  "scope": "./",
   "icons": [
     {
       "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%232196F3'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='120' fill='white'>🏃</text></svg>",
@@ -30,7 +30,7 @@
       "name": "התחל ריצה",
       "short_name": "ריצה",
       "description": "התחל ריצה חדשה",
-      "url": "/?action=start",
+      "url": "./?action=start",
       "icons": [
         {
           "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect width='96' height='96' fill='%234CAF50'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='60' fill='white'>▶️</text></svg>",
@@ -43,7 +43,7 @@
       "name": "יומן ריצות",
       "short_name": "יומן",
       "description": "צפה ביומן הריצות שלך",
-      "url": "/?action=history",
+      "url": "./?action=history",
       "icons": [
         {
           "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect width='96' height='96' fill='%23FF9800'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='60' fill='white'>📊</text></svg>",
