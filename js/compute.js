@@ -113,30 +113,69 @@ const Compute = (function() {
 
         let maxSpeed = 0;
         const MIN_SPEED = 2; // מהירות מינימלית (2 קמ"ש) - להתעלם מעמידות
+        const MIN_TIME_WINDOW = 5; // שניות - חלון זמן מינימלי לחישוב מהירות (להחלקת טעויות GPS)
+        const WINDOW_SIZE = 3; // מספר נקודות לחלון (לפחות 3 נקודות)
 
-        for (let i = 1; i < points.length; i++) {
-            const prev = points[i - 1];
-            const curr = points[i];
+        // חישוב מהירות על חלון של מספר נקודות במקום שתי נקודות בלבד
+        // זה מפחית את השפעת טעויות GPS
+        for (let i = 0; i < points.length - WINDOW_SIZE + 1; i++) {
+            const window = points.slice(i, i + WINDOW_SIZE);
+            
+            // בדיקת דיוק - דילוג על חלונות עם נקודות לא מדויקות
+            const hasLowAccuracy = window.some(p => p.accuracy && p.accuracy > MIN_ACCURACY);
+            if (hasLowAccuracy) continue;
 
-            // דילוג על נקודות עם דיוק נמוך
-            if (prev.accuracy && prev.accuracy > MIN_ACCURACY) continue;
-            if (curr.accuracy && curr.accuracy > MIN_ACCURACY) continue;
+            const firstPoint = window[0];
+            const lastPoint = window[window.length - 1];
 
             const distance = haversine(
-                prev.latitude,
-                prev.longitude,
-                curr.latitude,
-                curr.longitude
+                firstPoint.latitude,
+                firstPoint.longitude,
+                lastPoint.latitude,
+                lastPoint.longitude
             );
 
-            const timeDiff = (curr.timestamp - prev.timestamp) / 1000; // שניות
+            const timeDiff = (lastPoint.timestamp - firstPoint.timestamp) / 1000; // שניות
             
-            if (timeDiff > 0) {
+            // חישוב מהירות רק אם חלון הזמן מספיק גדול (להחלקת טעויות)
+            if (timeDiff >= MIN_TIME_WINDOW && timeDiff > 0) {
                 const speed = (distance / timeDiff) * 3600; // ק"מ/שעה
                 
                 // בדיקה שהמהירות בטווח הגיוני (2-25 קמ"ש)
                 if (speed >= MIN_SPEED && speed <= MAX_REASONABLE_SPEED && speed > maxSpeed) {
                     maxSpeed = speed;
+                }
+            }
+        }
+
+        // אם לא מצאנו מהירות בחלון, ננסה עם חלון קטן יותר (2 נקודות) כגיבוי
+        // אבל רק עם חלון זמן מינימלי גדול יותר
+        if (maxSpeed === 0 && points.length >= 2) {
+            for (let i = 1; i < points.length; i++) {
+                const prev = points[i - 1];
+                const curr = points[i];
+
+                // דילוג על נקודות עם דיוק נמוך
+                if (prev.accuracy && prev.accuracy > MIN_ACCURACY) continue;
+                if (curr.accuracy && curr.accuracy > MIN_ACCURACY) continue;
+
+                const distance = haversine(
+                    prev.latitude,
+                    prev.longitude,
+                    curr.latitude,
+                    curr.longitude
+                );
+
+                const timeDiff = (curr.timestamp - prev.timestamp) / 1000; // שניות
+                
+                // דרישה לחלון זמן גדול יותר (לפחות 3 שניות) כדי להפחית טעויות
+                if (timeDiff >= 3 && timeDiff > 0) {
+                    const speed = (distance / timeDiff) * 3600; // ק"מ/שעה
+                    
+                    // בדיקה שהמהירות בטווח הגיוני (2-25 קמ"ש)
+                    if (speed >= MIN_SPEED && speed <= MAX_REASONABLE_SPEED && speed > maxSpeed) {
+                        maxSpeed = speed;
+                    }
                 }
             }
         }
