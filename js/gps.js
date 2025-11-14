@@ -12,6 +12,7 @@ const GPS = (function() {
     let onLocationUpdate = null;
     let onGPSStatusChange = null;
     let highAccuracy = true;
+    let wakeLock = null; // שמירת המסך דלוק
 
     // קבועים
     const SAMPLING_INTERVAL = 3000; // 3 שניות בין דגימות
@@ -70,6 +71,46 @@ const GPS = (function() {
     }
 
     /**
+     * שמירת המסך דלוק
+     */
+    async function requestWakeLock() {
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+                console.log('🔒 המסך יישאר דלוק במהלך הריצה');
+                
+                // מאזין לשחרור Wake Lock (למשל אם המשתמש עובר לכרטיסייה אחרת)
+                wakeLock.addEventListener('release', () => {
+                    console.log('⚠️ Wake Lock שוחרר');
+                });
+                
+                return true;
+            } else {
+                console.log('⚠️ Wake Lock API לא זמין בדפדפן זה');
+                return false;
+            }
+        } catch (err) {
+            console.error('שגיאה ב-Wake Lock:', err);
+            return false;
+        }
+    }
+
+    /**
+     * שחרור Wake Lock
+     */
+    async function releaseWakeLock() {
+        if (wakeLock !== null) {
+            try {
+                await wakeLock.release();
+                wakeLock = null;
+                console.log('🔓 המסך יכול לכבות שוב');
+            } catch (err) {
+                console.error('שגיאה בשחרור Wake Lock:', err);
+            }
+        }
+    }
+
+    /**
      * התחלת מעקב GPS
      */
     async function startTracking(options = {}) {
@@ -92,6 +133,9 @@ const GPS = (function() {
         } catch (error) {
             throw error;
         }
+
+        // בקשת Wake Lock - שמירת המסך דלוק
+        await requestWakeLock();
 
         // התחלת מעקב
         const gpsOptions = {
@@ -193,6 +237,9 @@ const GPS = (function() {
 
         // מחיקת מצב זמני
         Storage.clearTempRunState();
+
+        // שחרור Wake Lock - אפשר למסך לכבות שוב
+        releaseWakeLock();
 
         return trackingPoints;
     }
